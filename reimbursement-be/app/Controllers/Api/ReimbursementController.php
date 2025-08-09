@@ -92,7 +92,7 @@ class ReimbursementController extends ResourceController
             case 'direct_superior': if ($currentStatus === 'pending') $newStatus = 'approved_superior'; break;
             case 'finance_spv': if ($currentStatus === 'approved_superior') $newStatus = 'approved_spv'; break;
             case 'finance_manager': if ($currentStatus === 'approved_spv') $newStatus = 'approved_manager'; break;
-            case 'director': if ($currentStatus === 'approved_manager') $newStatus = 'completed'; break; // Langsung completed
+            case 'director': if ($currentStatus === 'approved_manager') $newStatus = 'completed'; break; // Director approval completes the reimbursement
             default: return $this->failForbidden('Anda tidak memiliki hak akses untuk approval ini');
         }
 
