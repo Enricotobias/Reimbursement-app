@@ -1,27 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/apiService';
-
-// Tambahkan tipe ini di src/types/index.ts jika belum ada
-// export interface Reimbursement {
-//   id: number;
-//   user_id: number;
-//   reimbursement_date: string;
-//   total_amount: string;
-//   status: string;
-//   // tambahkan properti lain jika perlu ditampilkan
-// }
-
-// Tambahkan tipe ini di src/types/index.ts jika belum ada
-// export interface Reimbursement {
-//   id: number;
-//   user_id: number;
-//   reimbursement_date: string;
-//   total_amount: string;
-//   status: string;
-//   // tambahkan properti lain jika perlu ditampilkan
-// }
-import type { Reimbursement } from '../types'; // Asumsikan tipe sudah ada
- // Asumsikan tipe sudah ada
+import type { Reimbursement } from '../types';
 
 interface Props {
   title: string;
@@ -40,12 +19,55 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
     setError(null);
     try {
       const response = await apiService.getReimbursements();
-      // Filter data di frontend berdasarkan status yang dibutuhkan
-      const filteredData = response.data.filter((item: Reimbursement) => item.status === status);
+      
+      // DEBUG: Log response untuk troubleshooting
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+      console.log('Type of response.data:', typeof response.data);
+      
+      // Handle berbagai format response
+      let dataArray: Reimbursement[] = [];
+      
+      if (response.data && typeof response.data === 'object') {
+        // Jika response.data adalah object dengan property 'data'
+        if (response.data.data && Array.isArray(response.data.data)) {
+          dataArray = response.data.data;
+        }
+        // Jika response.data langsung array
+        else if (Array.isArray(response.data)) {
+          dataArray = response.data;
+        }
+        // Jika ada property lain yang berisi array
+        else if (response.data.reimbursements && Array.isArray(response.data.reimbursements)) {
+          dataArray = response.data.reimbursements;
+        }
+        else {
+          console.error('Unexpected response format:', response.data);
+          setError('Format data tidak sesuai yang diharapkan');
+          return;
+        }
+      } else {
+        console.error('Response data is not object or array:', response.data);
+        setError('Format response tidak valid');
+        return;
+      }
+      
+      // Filter data berdasarkan status
+      const filteredData = dataArray.filter((item: Reimbursement) => item.status === status);
+      console.log('Filtered data for status', status, ':', filteredData);
+      
       setReimbursements(filteredData);
-    } catch (err) {
-      setError('Gagal memuat data pengajuan.');
-      console.error(err);
+    } catch (err: any) {
+      console.error('Fetch error:', err);
+      console.error('Error response:', err.response);
+      
+      if (err.response?.status === 401) {
+        setError('Sesi telah habis. Silakan login ulang.');
+      } else if (err.response?.status === 403) {
+        setError('Anda tidak memiliki akses untuk melihat data ini.');
+      } else {
+        setError('Gagal memuat data pengajuan: ' + (err.response?.data?.message || err.message));
+      }
     } finally {
       setLoading(false);
     }
@@ -53,19 +75,18 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
 
   useEffect(() => {
     fetchData();
-  }, [status]); // Jalankan ulang fetch jika prop status berubah
+  }, [status]);
 
   const handleProcess = async (id: number, action: 'approve' | 'reject') => {
     if (!window.confirm(`Anda yakin ingin ${action} pengajuan ini?`)) return;
     
     try {
       await apiService.processApproval(id, action);
-      // Hapus item dari daftar agar UI update secara instan
       setReimbursements(prev => prev.filter(item => item.id !== id));
       alert(`Pengajuan berhasil di-${action}.`);
-    } catch (err) {
-      alert(`Gagal memproses pengajuan.`);
-      console.error(err);
+    } catch (err: any) {
+      console.error('Process error:', err);
+      alert(`Gagal memproses pengajuan: ${err.response?.data?.message || err.message}`);
     }
   };
 
@@ -84,6 +105,7 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
               <th>ID</th>
               <th>Tanggal</th>
               <th>Total Nominal</th>
+              <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -93,12 +115,27 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
                 <td>{item.id}</td>
                 <td>{item.reimbursement_date}</td>
                 <td>Rp {Number(item.total_amount).toLocaleString('id-ID')}</td>
+                <td>{item.status}</td>
                 <td>
-                  {canCheck && <button onClick={() => handleProcess(item.id, 'approve')}>Check</button>}
+                  {canCheck && (
+                    <button onClick={() => handleProcess(item.id, 'approve')}>
+                      Check
+                    </button>
+                  )}
                   {canApprove && (
                     <>
-                      <button onClick={() => handleProcess(item.id, 'approve')} style={{ marginRight: '5px' }}>Approve</button>
-                      <button onClick={() => handleProcess(item.id, 'reject')} style={{ backgroundColor: '#ffdddd' }}>Reject</button>
+                      <button 
+                        onClick={() => handleProcess(item.id, 'approve')} 
+                        style={{ marginRight: '5px' }}
+                      >
+                        Approve
+                      </button>
+                      <button 
+                        onClick={() => handleProcess(item.id, 'reject')} 
+                        style={{ backgroundColor: '#ffdddd' }}
+                      >
+                        Reject
+                      </button>
                     </>
                   )}
                 </td>

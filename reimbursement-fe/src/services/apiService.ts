@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Buat instance axios dengan URL dasar dari API backend Anda
 const apiClient = axios.create({
-  baseURL: 'http://localhost/reimbursement-app/public/api', // Sesuaikan port jika berbeda
+  baseURL: 'http://localhost:8080/api', // Sesuaikan dengan port development server CI4
   headers: {
     'Content-Type': 'application/json',
   },
