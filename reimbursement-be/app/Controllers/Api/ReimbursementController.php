@@ -61,6 +61,25 @@ class ReimbursementController extends ResourceController
         }
     }
 
+        public function show($id = null){
+        $reimbursementModel = new ReimbursementModel();
+        $detailModel = new ReimbursementDetailModel();
+
+        $reimbursement = $reimbursementModel
+            ->select('reimbursements.*, users.name as user_name')
+            ->join('users', 'users.id = reimbursements.user_id')
+            ->find($id);
+
+        if (!$reimbursement) {
+            return $this->failNotFound('Data pengajuan tidak ditemukan');
+        }
+
+        $details = $detailModel->where('reimbursement_id', $id)->findAll();
+        $reimbursement['details'] = $details;
+
+        return $this->respond($reimbursement);
+    }
+
     // Method lainnya tetap sama...
     public function create()
     {

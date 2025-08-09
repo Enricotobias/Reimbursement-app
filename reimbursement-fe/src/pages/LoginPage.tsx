@@ -1,8 +1,11 @@
+// src/pages/LoginPage.tsx
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/apiService';
 import axios from 'axios';
+import './LoginPage.css'; // Kita akan buat file CSS khusus untuk halaman ini
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -24,8 +27,7 @@ const LoginPage = () => {
       navigate('/dashboard');
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
-        // Ambil pesan error dari backend
-        setError(err.response.data.messages.error || 'Login gagal. Periksa kembali email dan password Anda.');
+        setError(err.response.data.messages?.error || 'Login gagal. Periksa kembali email dan password Anda.');
       } else {
         setError('Terjadi kesalahan pada jaringan atau server.');
       }
@@ -36,32 +38,41 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', width: '300px', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-        <h2>Login Reimbursement</h2>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ marginBottom: '10px', padding: '8px' }}
-        />
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ marginBottom: '20px', padding: '8px' }}
-        />
-        {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ padding: '10px', cursor: 'pointer' }}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <h3>Selamat Datang!</h3>
+          <p>Silakan masuk untuk melanjutkan</p>
+        </div>
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="form-group">
+            <label htmlFor="email">Alamat Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="contoh@email.com"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Masukkan password"
+              required
+            />
+          </div>
+          {error && <p className="error-message">{error}</p>}
+          <button type="submit" className="btn-login" disabled={loading}>
+            {loading ? 'Memproses...' : 'Login'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

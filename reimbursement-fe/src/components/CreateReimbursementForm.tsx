@@ -1,5 +1,8 @@
+// src/components/CreateReimbursementForm.tsx
+
 import React, { useState } from 'react';
 import { apiService } from '../services/apiService';
+import './FormStyles.css'; // File CSS bersama untuk form
 
 interface DetailItem {
   date: string;
@@ -57,32 +60,40 @@ const CreateReimbursementForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Form Pengajuan Reimbursement Baru</h2>
-      <fieldset style={{ marginBottom: '20px' }}>
+    <form onSubmit={handleSubmit} className="form-container">
+      <h2 className="form-title">Form Pengajuan Reimbursement Baru</h2>
+      
+      {message && (
+        <div className={`alert ${message.type === 'success' ? 'alert-success' : 'alert-danger'}`}>
+          {message.text}
+        </div>
+      )}
+
+      <fieldset className="form-fieldset">
         <legend>Informasi Rekening</legend>
-        <input name="acc_name" value={accName} onChange={(e) => setAccName(e.target.value)} placeholder="Nama Pemilik Rekening" required />
-        <input name="acc_no" value={accNo} onChange={(e) => setAccNo(e.target.value)} placeholder="Nomor Rekening" required />
-        <input name="bank" value={bank} onChange={(e) => setBank(e.target.value)} placeholder="Nama Bank" required />
+        <div className="fieldset-content">
+            <input name="acc_name" value={accName} onChange={(e) => setAccName(e.target.value)} placeholder="Nama Pemilik Rekening" required />
+            <input name="acc_no" value={accNo} onChange={(e) => setAccNo(e.target.value)} placeholder="Nomor Rekening" required />
+            <input name="bank" value={bank} onChange={(e) => setBank(e.target.value)} placeholder="Nama Bank" required />
+        </div>
       </fieldset>
       
-      <fieldset>
+      <fieldset className="form-fieldset">
         <legend>Rincian Reimbursement</legend>
-        {details.map((detail, index) => (
-          <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-            <input type="date" name="date" value={detail.date} onChange={(e) => handleDetailChange(index, e)} required />
-            <input name="location" value={detail.location} onChange={(e) => handleDetailChange(index, e)} placeholder="Lokasi" required />
-            <input name="description" value={detail.description} onChange={(e) => handleDetailChange(index, e)} placeholder="Deskripsi" required style={{ flex: 1 }} />
-            <input type="number" name="qty" value={detail.qty} onChange={(e) => handleDetailChange(index, e)} placeholder="Qty" required style={{ width: '60px' }} />
-            <input type="number" name="amount" value={detail.amount} onChange={(e) => handleDetailChange(index, e)} placeholder="Nominal" required />
-            {details.length > 1 && <button type="button" onClick={() => removeDetailRow(index)}>Hapus</button>}
-          </div>
-        ))}
-        <button type="button" onClick={addDetailRow}>+ Tambah Rincian</button>
+          {details.map((detail, index) => (
+            <div key={index} className="detail-row">
+              <input type="date" name="date" value={detail.date} onChange={(e) => handleDetailChange(index, e)} required />
+              <input name="location" value={detail.location} onChange={(e) => handleDetailChange(index, e)} placeholder="Lokasi" required />
+              <input name="description" value={detail.description} onChange={(e) => handleDetailChange(index, e)} placeholder="Deskripsi" required style={{ flex: 1 }} />
+              <input type="number" name="qty" value={detail.qty} onChange={(e) => handleDetailChange(index, e)} placeholder="Qty" required />
+              <input type="number" name="amount" value={detail.amount} onChange={(e) => handleDetailChange(index, e)} placeholder="Nominal" required />
+              {details.length > 1 && <button type="button" className="btn-remove" onClick={() => removeDetailRow(index)}>–</button>}
+            </div>
+          ))}
+          <button type="button" className="btn-add" onClick={addDetailRow}>+ Tambah Rincian</button>
       </fieldset>
       
-      {message && <p style={{ color: message.type === 'success' ? 'green' : 'red' }}>{message.text}</p>}
-      <button type="submit" disabled={loading} style={{ marginTop: '20px', padding: '10px 20px' }}>
+      <button type="submit" className="btn-submit" disabled={loading}>
         {loading ? 'Mengirim...' : 'Kirim Pengajuan'}
       </button>
     </form>

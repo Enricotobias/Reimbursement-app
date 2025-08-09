@@ -34,7 +34,12 @@ export const apiService = {
   createReimbursement: (data) => {
     return apiClient.post('/reimbursements', data);
   },
-  processApproval: (id, action) => { // action bisa 'approve' atau 'reject'
-    return apiClient.post(`/reimbursements/${id}/approve`, { action });
+  // TAMBAHKAN FUNGSI BARU INI
+  getReimbursementById: (id: number) => {
+    return apiClient.get(`/reimbursements/${id}`);
   },
+  processApproval: (id: number, data: { action: 'approve' | 'reject' }) => {
+    return apiClient.post(`/reimbursements/${id}/approve`, data);
+  },
+  
 };
