@@ -1,8 +1,9 @@
+// src/context/AuthContext.tsx
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { User } from '../types/';
+import type { User } from '../types';
 
-// Definisikan tipe untuk context
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -16,25 +17,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
 
-  useEffect(() => {
-    // Cek token saat aplikasi pertama kali dimuat
-    if (token) {
-      const decodedUser: User = jwtDecode(token);
-      setUser(decodedUser);
-    }
-  }, [token]);
-
-  const login = (newToken: string) => {
-    localStorage.setItem('token', newToken);
-    const decodedUser: User = jwtDecode(newToken);
-    setUser(decodedUser);
-    setToken(newToken);
-  };
-
+  // Fungsi logout terpusat
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
     setToken(null);
+  };
+
+  useEffect(() => {
+    if (token) {
+      try {
+        // <-- Penambahan try-catch
+        const decodedUser: User = jwtDecode(token);
+        // Cek jika token sudah kedaluwarsa
+        if (decodedUser.exp * 1000 < Date.now()) {
+          logout();
+        } else {
+          setUser(decodedUser);
+        }
+      } catch (error) {
+        console.error("Invalid token found in localStorage", error);
+        logout(); // Hapus token yang tidak valid
+      }
+    }
+  }, [token]);
+
+  const login = (newToken: string) => {
+    try {
+      // <-- Penambahan try-catch
+      const decodedUser: User = jwtDecode(newToken);
+      localStorage.setItem('token', newToken);
+      setUser(decodedUser);
+      setToken(newToken);
+    } catch (error) {
+      console.error("Failed to decode new token", error);
+    }
   };
 
   return (
@@ -44,7 +61,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Buat custom hook agar lebih mudah digunakan
 export const useAuth = () => {
   return useContext(AuthContext);
 };

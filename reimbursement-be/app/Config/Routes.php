@@ -7,9 +7,10 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+// Rute API yang tidak dilindungi (hanya untuk login)
 $routes->post('api/login', 'App\Controllers\API\AuthController::login');
 
-// Grup untuk semua API yang memerlukan autentikasi
+// Grup untuk semua API yang memerlukan autentikasi JWT
 $routes->group('api', ['filter' => 'jwt'], static function ($routes) {
     // Rute untuk Reimbursement
     $routes->get('reimbursements', 'App\Controllers\API\ReimbursementController::index'); // Melihat daftar
@@ -18,18 +19,4 @@ $routes->group('api', ['filter' => 'jwt'], static function ($routes) {
 
     // Rute untuk Proses Approval
     $routes->post('reimbursements/(:num)/approve', 'App\Controllers\API\ReimbursementController::approve/$1'); // Menyetujui/menolak
-});
-
-
-// Rute API tidak dilindungi
-$routes->post('api/login', 'App\Controllers\API\AuthController::login');
-
-// Grup API dilindungi oleh JWT Filter
-$routes->group('api', ['filter' => 'jwt'], static function ($routes) {
-    // Rute untuk Reimbursement
-    $routes->get('reimbursements', 'App\Controllers\API\ReimbursementController::index');
-    $routes->post('reimbursements', 'App\Controllers\API\ReimbursementController::create');
-
-    // Rute untuk Approval
-    $routes->post('reimbursements/(:num)/approve', 'App\Controllers\API\ReimbursementController::approve/$1');
 });

@@ -11,7 +11,17 @@ import { apiService } from '../services/apiService';
 //   // tambahkan properti lain jika perlu ditampilkan
 // }
 
-import { Reimbursement } from '../types'; // Asumsikan tipe sudah ada
+// Tambahkan tipe ini di src/types/index.ts jika belum ada
+// export interface Reimbursement {
+//   id: number;
+//   user_id: number;
+//   reimbursement_date: string;
+//   total_amount: string;
+//   status: string;
+//   // tambahkan properti lain jika perlu ditampilkan
+// }
+import type { Reimbursement } from '../types'; // Asumsikan tipe sudah ada
+ // Asumsikan tipe sudah ada
 
 interface Props {
   title: string;
