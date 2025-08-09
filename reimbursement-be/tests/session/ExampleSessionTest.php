@@ -13,5 +13,11 @@ final class ExampleSessionTest extends CIUnitTestCase
 
         $session->set('logged_in', 123);
         $this->assertSame(123, $session->get('logged_in'));
+
+        $session->remove('logged_in');
+        $this->assertNull($session->get('logged_in'));
+
+        $session->destroy();
+        $this->assertFalse($session->has('logged_in'));
     }
 }
