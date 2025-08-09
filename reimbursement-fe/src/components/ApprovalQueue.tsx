@@ -3,9 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/apiService';
 import { type Reimbursement } from '../types'; 
 import './TableStyles.css';
-import DetailModal from './DetailModal'; // <-- Impor modal
+import DetailModal from './DetailModal';
 
-// ... (Interface Props tetap sama)
+interface Props {
+  title: string;
+  status: string;
+  canCheck?: boolean;
+  canApprove?: boolean;
+}
 
 const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
   const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
@@ -15,31 +20,52 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
   // State baru untuk mengontrol modal
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  // ... (fungsi fetchData tetap sama)
-const fetchData = async () => {
+  const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await apiService.getReimbursements();
+      
+      console.log('API Response:', response.data);
 
-      // --- PERBAIKAN DI SINI ---
-      // Cek array dari dalam properti 'data'
-      if (Array.isArray(response.data.data)) {
-        const filteredData = response.data.data.filter((item: Reimbursement) => item.status === status);
-        setReimbursements(filteredData);
+      // Cek struktur response yang benar
+      let dataArray = [];
+      if (response.data.data && Array.isArray(response.data.data)) {
+        dataArray = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        dataArray = response.data;
       } else {
         console.error("Backend did not return a valid data array:", response.data);
         setError('Gagal memproses data dari server.');
+        return;
       }
+
+      const filteredData = dataArray.filter((item: Reimbursement) => item.status === status);
+      setReimbursements(filteredData);
 
     } catch (err) {
       setError('Gagal memuat data pengajuan.');
-      console.error(err);
+      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
-};
-  // ... (fungsi handleProcess tetap sama)
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [status]);
+
+  const handleProcess = async (id: number, action: 'approve' | 'reject') => {
+    try {
+      await apiService.processApproval(id, { action });
+      // Refresh data setelah approval
+      await fetchData();
+      alert(`Pengajuan berhasil di-${action === 'approve' ? 'approve' : 'reject'}!`);
+    } catch (error) {
+      alert('Gagal memproses pengajuan. Silakan coba lagi.');
+      console.error('Error processing approval:', error);
+    }
+  };
 
   if (loading) return <p>Memuat data...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
@@ -53,18 +79,22 @@ const fetchData = async () => {
         <table className="modern-table">
           <thead>
             <tr>
-              {/* ... th lainnya ... */}
+              <th>ID</th>
+              <th>Tanggal Pengajuan</th>
               <th>Total Nominal</th>
-              <th style={{ width: '250px' }}>Aksi</th> {/* Lebarkan kolom Aksi */}
+              <th>Status</th>
+              <th style={{ width: '250px' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {reimbursements.map(item => (
               <tr key={item.id}>
-                {/* ... td lainnya ... */}
+                <td>{item.id}</td>
+                <td>{item.reimbursement_date}</td>
                 <td>Rp {Number(item.total_amount).toLocaleString('id-ID')}</td>
+                <td>{item.status}</td>
                 <td className="action-buttons">
-                  <button className="btn-detail" onClick={() => setSelectedId(item.id)}>Detail</button> {/* Tombol Detail */}
+                  <button className="btn-detail" onClick={() => setSelectedId(item.id)}>Detail</button>
                   {canCheck && <button className="btn-check" onClick={() => handleProcess(item.id, 'approve')}>Check</button>}
                   {canApprove && (
                     <>

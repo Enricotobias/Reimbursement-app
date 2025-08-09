@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Buat instance axios dengan URL dasar dari API backend Anda
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api', // Sesuaikan dengan port development server CI4
+  baseURL: 'http://localhost/reimbursement-be/public/api', // Sesuaikan dengan path backend Anda
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,23 +23,34 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Response interceptor untuk handle error secara global
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired atau invalid
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Sekarang definisikan semua fungsi API Anda
 export const apiService = {
-  login: (email, password) => {
+  login: (email: string, password: string) => {
     return apiClient.post('/login', { email, password });
   },
   getReimbursements: () => {
     return apiClient.get('/reimbursements');
   },
-  createReimbursement: (data) => {
+  createReimbursement: (data: any) => {
     return apiClient.post('/reimbursements', data);
   },
-  // TAMBAHKAN FUNGSI BARU INI
   getReimbursementById: (id: number) => {
     return apiClient.get(`/reimbursements/${id}`);
   },
   processApproval: (id: number, data: { action: 'approve' | 'reject' }) => {
     return apiClient.post(`/reimbursements/${id}/approve`, data);
   },
-  
 };

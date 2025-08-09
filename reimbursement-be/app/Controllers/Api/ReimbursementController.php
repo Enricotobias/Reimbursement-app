@@ -61,35 +61,194 @@ class ReimbursementController extends ResourceController
         }
     }
 
-        public function show($id = null){
-        $reimbursementModel = new ReimbursementModel();
-        $detailModel = new ReimbursementDetailModel();
+    public function show($id = null)
+    {
+        $this->setCorsHeaders();
+        
+        try {
+            $reimbursementModel = new ReimbursementModel();
+            $detailModel = new ReimbursementDetailModel();
 
-        $reimbursement = $reimbursementModel
-            ->select('reimbursements.*, users.name as user_name')
-            ->join('users', 'users.id = reimbursements.user_id')
-            ->find($id);
+            $reimbursement = $reimbursementModel
+                ->select('reimbursements.*, users.name as user_name')
+                ->join('users', 'users.id = reimbursements.user_id')
+                ->find($id);
 
-        if (!$reimbursement) {
-            return $this->failNotFound('Data pengajuan tidak ditemukan');
+            if (!$reimbursement) {
+                return $this->failNotFound('Data pengajuan tidak ditemukan');
+            }
+
+            $details = $detailModel->where('reimbursement_id', $id)->findAll();
+            $reimbursement['details'] = $details;
+
+            return $this->respond($reimbursement);
+        } catch (\Exception $e) {
+            log_message('error', 'Error in reimbursements show: ' . $e->getMessage());
+            return $this->fail([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $details = $detailModel->where('reimbursement_id', $id)->findAll();
-        $reimbursement['details'] = $details;
-
-        return $this->respond($reimbursement);
     }
 
-    // Method lainnya tetap sama...
     public function create()
     {
         $this->setCorsHeaders();
-        // ... kode create sama seperti sebelumnya
+        
+        try {
+            $user = $this->request->user;
+            
+            // Validasi role - hanya staff yang bisa create
+            if ($user->role !== 'staff') {
+                return $this->failForbidden('Hanya staff yang dapat membuat pengajuan');
+            }
+
+            $rawInput = $this->request->getBody();
+            $inputData = json_decode($rawInput, true);
+
+            if (!$inputData) {
+                return $this->fail([
+                    'status' => 'error',
+                    'message' => 'Data tidak valid'
+                ], 400);
+            }
+
+            $reimbursementModel = new ReimbursementModel();
+            $detailModel = new ReimbursementDetailModel();
+            
+            // Mulai transaksi
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            // Insert reimbursement utama
+            $reimbursementData = [
+                'user_id' => $user->uid,
+                'reimbursement_date' => date('Y-m-d'),
+                'acc_name' => $inputData['acc_name'],
+                'acc_no' => $inputData['acc_no'],
+                'bank' => $inputData['bank'],
+                'total_amount' => $inputData['total_amount'],
+                'status' => 'pending'
+            ];
+
+            $reimbursementId = $reimbursementModel->insert($reimbursementData);
+
+            // Insert details
+            foreach ($inputData['details'] as $detail) {
+                $detailData = [
+                    'reimbursement_id' => $reimbursementId,
+                    'date' => $detail['date'],
+                    'location' => $detail['location'],
+                    'description' => $detail['description'],
+                    'qty' => $detail['qty'],
+                    'amount' => $detail['amount']
+                ];
+                $detailModel->insert($detailData);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->fail([
+                    'status' => 'error',
+                    'message' => 'Gagal menyimpan pengajuan'
+                ], 500);
+            }
+
+            return $this->respondCreated([
+                'status' => 'success',
+                'message' => 'Pengajuan berhasil dibuat',
+                'id' => $reimbursementId
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error in reimbursements create: ' . $e->getMessage());
+            return $this->fail([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function approve($id = null)
     {
         $this->setCorsHeaders();
-        // ... kode approve sama seperti sebelumnya
+        
+        try {
+            $user = $this->request->user;
+            $rawInput = $this->request->getBody();
+            $inputData = json_decode($rawInput, true);
+
+            if (!$inputData || !isset($inputData['action'])) {
+                return $this->fail([
+                    'status' => 'error',
+                    'message' => 'Action tidak valid'
+                ], 400);
+            }
+
+            $action = $inputData['action']; // 'approve' atau 'reject'
+            $model = new ReimbursementModel();
+            $reimbursement = $model->find($id);
+
+            if (!$reimbursement) {
+                return $this->failNotFound('Pengajuan tidak ditemukan');
+            }
+
+            // Tentukan status baru berdasarkan role dan action
+            $newStatus = '';
+            $canProcess = false;
+
+            switch ($user->role) {
+                case 'direct_superior':
+                    if ($reimbursement['status'] === 'pending') {
+                        $canProcess = true;
+                        $newStatus = $action === 'approve' ? 'approved_superior' : 'rejected';
+                    }
+                    break;
+                case 'finance_spv':
+                    if ($reimbursement['status'] === 'approved_superior') {
+                        $canProcess = true;
+                        $newStatus = $action === 'approve' ? 'approved_spv' : 'rejected';
+                    }
+                    break;
+                case 'finance_manager':
+                    if ($reimbursement['status'] === 'approved_spv') {
+                        $canProcess = true;
+                        $newStatus = $action === 'approve' ? 'approved_manager' : 'rejected';
+                    }
+                    break;
+                case 'director':
+                    if ($reimbursement['status'] === 'approved_manager') {
+                        $canProcess = true;
+                        $newStatus = $action === 'approve' ? 'completed' : 'rejected';
+                    }
+                    break;
+                default:
+                    return $this->failForbidden('Anda tidak memiliki hak untuk memproses pengajuan ini');
+            }
+
+            if (!$canProcess) {
+                return $this->fail([
+                    'status' => 'error',
+                    'message' => 'Status pengajuan tidak sesuai untuk diproses oleh role Anda'
+                ], 400);
+            }
+
+            // Update status
+            $model->update($id, ['status' => $newStatus]);
+
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Pengajuan berhasil diproses',
+                'new_status' => $newStatus
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error in reimbursements approve: ' . $e->getMessage());
+            return $this->fail([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
