@@ -42,7 +42,7 @@ class CreateReimbursementsTable extends Migration
             ],
             'status' => [
                 'type'       => 'ENUM',
-                'constraint' => ['pending', 'approved_superior', 'approved_spv', 'approved_manager', 'approved_director', 'rejected', 'completed'],
+                'constraint' => ['pending', 'approved_superior', 'approved_spv', 'approved_manager', 'rejected', 'completed'],
                 'default'    => 'pending',
             ],
             'created_at' => [
