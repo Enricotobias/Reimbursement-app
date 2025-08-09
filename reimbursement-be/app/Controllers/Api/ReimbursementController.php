@@ -1,4 +1,4 @@
-<?php namespace App\Controllers\API;
+<?php namespace App\Controllers\Api;
 
 use App\Models\ReimbursementModel;
 use App\Models\ReimbursementDetailModel;
