@@ -1,4 +1,4 @@
-<?php namespace App\Controllers\API;
+<?php namespace App\Controllers\Api;
 
 use App\Models\UserModel;
 use CodeIgniter\RESTful\ResourceController;
