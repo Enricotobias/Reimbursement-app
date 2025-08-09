@@ -6,6 +6,7 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
+$routes->options('(:any)', static fn() => '');
 
 $routes->post('api/login', 'App\Controllers\API\AuthController::login');
 
