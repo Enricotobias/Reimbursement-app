@@ -1,7 +1,7 @@
 /* src/components/TableStyles.css */
 .table-container {
   width: 100%;
-  position: relative; /* Pastikan positioning normal */
+  position: relative;
 }
 
 .table-title {
@@ -24,6 +24,7 @@
   text-align: left;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
 }
 
 .modern-table thead th {
@@ -31,11 +32,11 @@
   background-color: var(--light-gray);
   position: sticky;
   top: 0;
-  z-index: 10; /* Tidak terlalu tinggi agar tidak menutupi modal */
+  z-index: 10;
 }
 
 .modern-table tbody tr:hover {
-  background-color: #f1f1f1;
+  background-color: #f8f9fa;
 }
 
 .action-buttons {
@@ -51,8 +52,8 @@
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  position: relative; /* Pastikan button positioning normal */
-  z-index: 1; /* Z-index rendah untuk button */
+  position: relative;
+  z-index: 1;
 }
 
 .btn-detail {
@@ -100,55 +101,153 @@
   font-weight: bold;
 }
 
-/* ====== Progress Approval (History) ====== */
 /* ===== Progress Approval (History) ===== */
 .progress-line {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 240px;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 400px;
+  overflow-x: auto;
+  padding: 4px 0;
 }
 
 .progress-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
+  gap: 6px;
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 11px;
   font-weight: 600;
   border: 1px solid transparent;
   white-space: nowrap;
+  min-width: fit-content;
 }
+
 .progress-chip .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 
-/* waiting (default) */
-.progress-chip--waiting { background:#fffbeb; color:#7c2d12; border-color:#fbbf24; }
-.progress-chip--waiting .dot { background:#f59e0b; }
+/* Status waiting (orange) */
+.progress-chip--waiting { 
+  background: #fff7ed; 
+  color: #c2410c; 
+  border-color: #fed7aa; 
+}
+.progress-chip--waiting .dot { 
+  background: #ea580c; 
+}
 
-/* approved */
-.progress-chip--approved { background:#ecfdf5; color:#065f46; border-color:#34d399; }
-.progress-chip--approved .dot { background:#10b981; }
+/* Status approved (green) */
+.progress-chip--approved { 
+  background: #ecfdf5; 
+  color: #065f46; 
+  border-color: #86efac; 
+}
+.progress-chip--approved .dot { 
+  background: #10b981; 
+}
 
-/* rejected */
-.progress-chip--rejected { background:#fef2f2; color:#7f1d1d; border-color:#f87171; }
-.progress-chip--rejected .dot { background:#ef4444; }
+/* Status rejected (red) */
+.progress-chip--rejected { 
+  background: #fef2f2; 
+  color: #7f1d1d; 
+  border-color: #fca5a5; 
+}
+.progress-chip--rejected .dot { 
+  background: #ef4444; 
+}
 
-/* skipped (opsional) */
-.progress-chip--skipped { background:#f3f4f6; color:#374151; border-color:#d1d5db; }
-.progress-chip--skipped .dot { background:#9ca3af; }
+/* Status skipped (gray) */
+.progress-chip--skipped { 
+  background: #f9fafb; 
+  color: #4b5563; 
+  border-color: #e5e7eb; 
+}
+.progress-chip--skipped .dot { 
+  background: #9ca3af; 
+}
 
-/* status chip yang sudah ada (untuk kolom 'Status Akhir') */
-.chip { display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid transparent; }
-.chip--approved { background:#ecfdf5; color:#047857; border-color:#34d399; }
-.chip--rejected { background:#fef2f2; color:#b91c1c; border-color:#f87171; }
-.chip--pending  { background:#fff7ed; color:#c2410c; border-color:#fbbf24; }
+/* Garis penghubung antar step */
+.connector { 
+  width: 16px; 
+  height: 2px; 
+  background: #e5e7eb; 
+  display: inline-block; 
+  flex-shrink: 0;
+}
 
-/* garis penghubung antar step */
-.connector { width:24px; height:2px; background:#e5e7eb; display:inline-block; }
+/* Status chip untuk kolom 'Status Akhir' */
+.chip { 
+  display: inline-flex; 
+  align-items: center; 
+  padding: 4px 12px; 
+  border-radius: 12px; 
+  font-size: 12px; 
+  font-weight: 600; 
+  border: 1px solid transparent; 
+}
+
+.chip--approved { 
+  background: #ecfdf5; 
+  color: #047857; 
+  border-color: #86efac; 
+}
+
+.chip--rejected { 
+  background: #fef2f2; 
+  color: #b91c1c; 
+  border-color: #fca5a5; 
+}
+
+.chip--pending { 
+  background: #fff7ed; 
+  color: #c2410c; 
+  border-color: #fed7aa; 
+}
+
+/* Loading dan Error states */
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: var(--danger-color);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .progress-line {
+    min-width: 350px;
+  }
+  
+  .progress-chip {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modern-table {
+    font-size: 0.8rem;
+  }
+  
+  .progress-line {
+    min-width: 300px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons button {
+    width: 100%;
+  }
+}

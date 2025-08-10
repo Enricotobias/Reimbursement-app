@@ -41,8 +41,9 @@ export const apiService = {
   login: (email: string, password: string) => {
     return apiClient.post('/login', { email, password });
   },
-  getReimbursements: () => {
-    return apiClient.get('/reimbursements');
+  getReimbursements: (history: boolean = false) => {
+    const params = history ? { history: 'true' } : {};
+    return apiClient.get('/reimbursements', { params });
   },
   createReimbursement: (data: any) => {
     return apiClient.post('/reimbursements', data);

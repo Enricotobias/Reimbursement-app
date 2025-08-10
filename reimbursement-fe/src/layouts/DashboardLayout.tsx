@@ -1,4 +1,4 @@
-// src/components/DashboardLayout.tsx
+// src/layouts/DashboardLayout.tsx
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
@@ -6,9 +6,10 @@ import '../pages/DashboardPage.css';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  title?: string;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
 

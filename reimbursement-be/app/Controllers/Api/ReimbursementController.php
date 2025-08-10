@@ -25,24 +25,73 @@ class ReimbursementController extends ResourceController
             $model = new ReimbursementModel();
             $data = [];
 
-            switch ($user->role) {
-                case 'staff':
-                    $data = $model->where('user_id', $user->uid)->orderBy('id', 'DESC')->findAll();
-                    break;
-                case 'direct_superior':
-                    $data = $model->where('status', 'pending')->orderBy('id', 'DESC')->findAll();
-                    break;
-                case 'finance_spv':
-                    $data = $model->where('status', 'approved_superior')->orderBy('id', 'DESC')->findAll();
-                    break;
-                case 'finance_manager':
-                    $data = $model->where('status', 'approved_spv')->orderBy('id', 'DESC')->findAll();
-                    break;
-                case 'director':
-                    $data = $model->where('status', 'approved_manager')->orderBy('id', 'DESC')->findAll();
-                    break;
-                default:
-                    return $this->failForbidden('Role tidak dikenal');
+            // Cek apakah ini request untuk history (bisa ditambahkan parameter atau endpoint terpisah)
+            $showAllHistory = $this->request->getGet('history') === 'true';
+            
+            if ($showAllHistory) {
+                // Untuk halaman history, tampilkan semua data sesuai dengan role
+                switch ($user->role) {
+                    case 'staff':
+                        // Staff hanya melihat pengajuan mereka sendiri
+                        $data = $model->where('user_id', $user->uid)->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'direct_superior':
+                        // Direct superior melihat semua pengajuan yang pernah melewati tahap mereka
+                        $data = $model->whereIn('status', [
+                            'pending', 'approved_superior', 'approved_spv', 'approved_manager', 'completed', 'rejected'
+                        ])->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'finance_spv':
+                        // Finance SPV melihat pengajuan yang sudah melewati superior
+                        $data = $model->whereIn('status', [
+                            'approved_superior', 'approved_spv', 'approved_manager', 'completed', 'rejected'
+                        ])->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'finance_manager':
+                        // Finance Manager melihat pengajuan yang sudah melewati SPV
+                        $data = $model->whereIn('status', [
+                            'approved_spv', 'approved_manager', 'completed', 'rejected'
+                        ])->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'director':
+                        // Director melihat pengajuan yang sudah melewati manager
+                        $data = $model->whereIn('status', [
+                            'approved_manager', 'completed', 'rejected'
+                        ])->orderBy('id', 'DESC')->findAll();
+                        break;
+                    default:
+                        return $this->failForbidden('Role tidak dikenal');
+                }
+            } else {
+                // Untuk halaman dashboard, tampilkan hanya yang perlu diproses
+                switch ($user->role) {
+                    case 'staff':
+                        $data = $model->where('user_id', $user->uid)->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'direct_superior':
+                        $data = $model->where('status', 'pending')->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'finance_spv':
+                        $data = $model->where('status', 'approved_superior')->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'finance_manager':
+                        $data = $model->where('status', 'approved_spv')->orderBy('id', 'DESC')->findAll();
+                        break;
+                    case 'director':
+                        $data = $model->where('status', 'approved_manager')->orderBy('id', 'DESC')->findAll();
+                        break;
+                    default:
+                        return $this->failForbidden('Role tidak dikenal');
+                }
+            }
+            
+            // Tambahkan informasi user name untuk setiap pengajuan
+            if (!empty($data)) {
+                $userModel = model('UserModel');
+                foreach ($data as &$item) {
+                    $user_info = $userModel->find($item['user_id']);
+                    $item['user_name'] = $user_info ? $user_info['name'] : 'Unknown User';
+                }
             }
             
             // Pastikan return format konsisten

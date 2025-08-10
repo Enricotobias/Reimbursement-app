@@ -25,7 +25,8 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiService.getReimbursements();
+      // Untuk dashboard, tidak menggunakan parameter history
+      const response = await apiService.getReimbursements(false);
       
       console.log('API Response:', response.data);
 
