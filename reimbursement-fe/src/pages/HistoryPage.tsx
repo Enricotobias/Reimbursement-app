@@ -1,76 +1,33 @@
+// src/pages/HistoryPage.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../services/apiService';
 import type { Reimbursement } from '../types';
-import '../components/TableStyles.css';
-import './DashboardPage.css';
+import DashboardLayout from '../layouts/DashboardLayout'; // <-- 1. Impor Layout
 import DetailModal from '../components/DetailModal';
-import DashboardLayout from '../layouts/DashboardLayout';
+import '../components/TableStyles.css';
+// import './HistoryPage.css'; // <-- 2. Impor CSS baru untuk progress bar
 
-type HistoryItem = Reimbursement & {
-  created_at?: string;
-  approvals?: any[];
-  approval_logs?: any[];
-  approvalHistory?: any[];
-  history?: any[];
-  logs?: any[];
-  [key: string]: any;
-};
-
+// Definisi tipe dan fungsi helper (TETAP SAMA)
+type HistoryItem = Reimbursement & { [key: string]: any; };
 const DEFAULT_STEPS = ['direct_superior', 'finance_spv', 'finance_manager', 'director'];
+const toNumber = (v: any) => { /* ... (kode helper Anda) ... */ };
+const getApprovalList = (row: any) => row.approvals || row.approval_logs || row.approvalHistory || row.history || row.logs || [];
+const normalizeApprovalEntry = (x: any) => { /* ... (kode helper Anda) ... */ };
+const toRoleMap = (entries: any[]) => { /* ... (kode helper Anda) ... */ };
 
-const toNumber = (v: any) => {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') {
-    const n = Number(v.replace(/[^\d.-]/g, ''));
-    return Number.isFinite(n) ? n : 0;
-  }
-  return 0;
-};
-const getApprovalList = (row: any) =>
-  row.approvals || row.approval_logs || row.approvalHistory || row.history || row.logs || undefined;
-
-const normalizeApprovalEntry = (x: any) => {
-  const role =
-    x?.role?.toLowerCase?.() ??
-    x?.position?.toLowerCase?.() ??
-    x?.level?.toLowerCase?.() ??
-    x?.title?.toLowerCase?.() ??
-    '';
-  const rawStatus =
-    x?.status ??
-    x?.state ??
-    x?.approval_status ??
-    (x?.is_approved === true ? 'approved' : x?.is_approved === false ? 'rejected' : 'waiting');
-  const status = String(rawStatus || 'waiting').toLowerCase();
-  const by = x?.by ?? x?.approved_by ?? x?.user_name ?? x?.username ?? x?.approver_name ?? null;
-  const at = x?.at ?? x?.date ?? x?.approved_at ?? x?.updated_at ?? x?.created_at ?? null;
-  return { role, status, by, at };
-};
-const toRoleMap = (entries: any[]) => {
-  const rank = (s: string) => (s === 'approved' ? 3 : s === 'rejected' ? 2 : s === 'skipped' ? 1 : 0);
-  const m = new Map<string, { role: string; status: string; by?: string | null; at?: any }>();
-  entries.forEach((e) => {
-    const n = normalizeApprovalEntry(e);
-    if (!n.role) return;
-    const prev = m.get(n.role);
-    if (!prev || rank(n.status) > rank(prev.status)) m.set(n.role, n);
-  });
-  return m;
-};
 
 const HistoryPage: React.FC = () => {
   const [rows, setRows] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
       setLoading(true); setErr(null);
       try {
-        // Gunakan endpoint history yang baru untuk melihat semua pengajuan
-        const res = await apiService.getReimbursementsHistory();
+        const res = await apiService.getReimbursements();
+        // Logika pengambilan data Anda sudah bagus
         const arr = Array.isArray(res?.data?.data) ? res.data.data
                   : Array.isArray(res?.data) ? res.data
                   : [];
@@ -83,155 +40,78 @@ const HistoryPage: React.FC = () => {
     })();
   }, []);
 
-  const stepsOrder = DEFAULT_STEPS;
   const data = useMemo(() => rows, [rows]);
 
   const renderStatusChip = (status?: string) => {
-    const s = (status || '').toLowerCase();
-    const cls = s === 'approved' ? 'chip chip--approved'
-              : s === 'rejected' ? 'chip chip--rejected'
-              : 'chip chip--pending';
-    return <span className={cls}>{status ?? '-'}</span>;
+    // ... (kode renderStatusChip Anda) ...
   };
-
+  
   const renderProgress = (row: HistoryItem) => {
-    // Gunakan data approval_progress dari backend jika ada
-    const approvalProgress = row.approval_progress;
-    
-    if (approvalProgress) {
-      // Data langsung dari backend
-      return (
-        <div className="progress-line">
-          {Object.entries(approvalProgress).map(([role, info]: [string, any], idx) => {
-            const label = info.label || role;
-            const status = info.status || 'waiting';
-
-            const cls = status === 'approved' ? 'progress-chip progress-chip--approved'
-                     : status === 'rejected' ? 'progress-chip progress-chip--rejected'
-                     : 'progress-chip progress-chip--waiting';
-
-            return (
-              <React.Fragment key={role}>
-                <span className={cls} title={`${label}: ${status}`}>
-                  <i aria-hidden className="dot" />
-                  {label}
-                </span>
-                {idx < Object.keys(approvalProgress).length - 1 && <span className="connector" aria-hidden />}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      );
-    }
-
-    // Fallback: logic lama berdasarkan status
-    const statusToStepMap: { [key: string]: string[] } = {
-      'pending': [],
-      'approved_superior': ['direct_superior'],
-      'approved_spv': ['direct_superior', 'finance_spv'],
-      'approved_manager': ['direct_superior', 'finance_spv', 'finance_manager'],
-      'completed': ['direct_superior', 'finance_spv', 'finance_manager', 'director'],
-      'rejected': [] // akan ditentukan berdasarkan konteks
-    };
-
-    const approvedSteps = statusToStepMap[row.status] || [];
-    
-    return (
-      <div className="progress-line">
-        {stepsOrder.map((role, idx) => {
-          const label =
-            role === 'direct_superior' ? 'Direct Superior' :
-            role === 'finance_spv'     ? 'Finance SPV'     :
-            role === 'finance_manager' ? 'Finance Manager' :
-            role === 'director'        ? 'Director'        : role;
-
-          const isApproved = approvedSteps.includes(role);
-          const isRejected = row.status === 'rejected' && !isApproved;
-          
-          const cls = isApproved ? 'progress-chip progress-chip--approved'
-                   : isRejected ? 'progress-chip progress-chip--rejected'
-                   : 'progress-chip progress-chip--waiting';
-
-          const status = isApproved ? 'approved' : isRejected ? 'rejected' : 'waiting';
-
-          return (
-            <React.Fragment key={role}>
-              <span className={cls} title={`${label}: ${status}`}>
-                <i aria-hidden className="dot" />
-                {label}
-              </span>
-              {idx < stepsOrder.length - 1 && <span className="connector" aria-hidden />}
-            </React.Fragment>
-          );
-        })}
-      </div>
-    );
+    // ... (kode renderProgress Anda) ...
   };
-
+  
+  // ⬇⬇⬇ KONTEN INTI DIBUNGKUS OLEH LAYOUT ⬇⬇⬇
   return (
-    <DashboardLayout>
-      <div className="page-header">
-        <h1>Riwayat Pengajuan</h1>
-        <p className="muted">Lihat progres persetujuan tiap jabatan untuk setiap pengajuan.</p>
-      </div>
+    <DashboardLayout title="Riwayat Pengajuan">
+      <p style={{ marginTop: 0, color: '#6c757d' }}>
+        Lihat progres persetujuan tiap jabatan untuk setiap pengajuan.
+      </p>
 
-      <div className="content-card">
-        {loading && <div className="loading">Memuat…</div>}
-        {err && <div className="error">{err}</div>}
+      {loading && <div>Memuat…</div>}
+      {err && <div style={{ color: 'red' }}>{err}</div>}
 
-        {!loading && !err && (
-          <div className="table-container">
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Pengaju</th>
-                  <th>Tanggal</th>
-                  <th>Total</th>
-                  <th>Status Akhir</th>
-                  <th>Progress Approval</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((r) => {
-                  const tanggal = r.reimbursement_date || r.created_at || '-';
-                  const total = toNumber(r.total_amount);
-                  return (
-                    <tr key={r.id}>
-                      <td>{r.id}</td>
-                      <td>{r.user_name || '-'}</td>
-                      <td>{tanggal ? new Date(tanggal).toISOString().slice(0, 10) : '-'}</td>
-                      <td>{total.toLocaleString('id-ID', { style:'currency', currency:'IDR', maximumFractionDigits:0 })}</td>
-                      <td>{renderStatusChip(r.status)}</td>
-                      <td>{renderProgress(r)}</td>
-                      <td className="action-buttons">
-                        <button
-                          type="button"
-                          className="btn-detail"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedId(Number(r.id)); setOpen(true); }}
-                        >
-                          Detail
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {data.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="text-center muted p-4">Belum ada riwayat.</td>
+      {!loading && !err && (
+        <div className="table-container">
+          <table className="modern-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Tanggal</th>
+                <th>Total</th>
+                <th>Status Akhir</th>
+                <th style={{ minWidth: '350px' }}>Progress Approval</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((r) => {
+                const tanggal = r.reimbursement_date || r.created_at || '-';
+                const total = toNumber(r.total_amount);
+                return (
+                  <tr key={r.id}>
+                    <td>{r.id}</td>
+                    <td>{tanggal ? new Date(tanggal).toISOString().slice(0, 10) : '-'}</td>
+                    <td>{total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}</td>
+                    <td>{renderStatusChip(r.status)}</td>
+                    <td>{renderProgress(r)}</td>
+                    <td className="action-buttons">
+                      <button
+                        type="button"
+                        className="btn-detail"
+                        onClick={() => setSelectedId(Number(r.id))}
+                      >
+                        Detail
+                      </button>
+                    </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                );
+              })}
+              {data.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '1rem', color: '#6c757d' }}>
+                    Belum ada riwayat.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
-            <DetailModal
-              reimbursementId={open ? selectedId : null}
-              onClose={() => setOpen(false)}
-            />
-          </div>
-        )}
-      </div>
+          <DetailModal
+            reimbursementId={selectedId}
+            onClose={() => setSelectedId(null)}
+          />
+        </div>
+      )}
     </DashboardLayout>
   );
 };
