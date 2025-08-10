@@ -11,6 +11,30 @@ use Config\Services;
 
 class JwtFilter implements FilterInterface
 {
+    private function getCorsHeaders($request)
+    {
+        $origin = $request->getHeaderLine('Origin');
+        $allowedOrigins = [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000'
+        ];
+
+        $allowOrigin = 'http://localhost:5173'; // default
+        if (in_array($origin, $allowedOrigins)) {
+            $allowOrigin = $origin;
+        }
+
+        return [
+            'Access-Control-Allow-Origin' => $allowOrigin,
+            'Access-Control-Allow-Credentials' => 'true',
+            'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-HTTP-Method-Override',
+            'Vary' => 'Origin'
+        ];
+    }
+
     public function before(RequestInterface $request, $arguments = null)
     {
         // Skip JWT check untuk OPTIONS request (preflight CORS)
@@ -21,10 +45,18 @@ class JwtFilter implements FilterInterface
         $header = $request->getHeaderLine('Authorization');
         if (empty($header) || !preg_match('/Bearer\s(\S+)/', $header, $matches)) {
             $response = Services::response();
+            $corsHeaders = $this->getCorsHeaders($request);
+            
+            foreach ($corsHeaders as $key => $value) {
+                $response->setHeader($key, $value);
+            }
+            
             return $response
-                ->setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
-                ->setHeader('Access-Control-Allow-Credentials', 'true')
-                ->setBody(json_encode(['error' => 'Token tidak ditemukan atau format salah']))
+                ->setBody(json_encode([
+                    'status' => 'error',
+                    'message' => 'Token tidak ditemukan atau format salah',
+                    'error' => 'Unauthorized'
+                ]))
                 ->setStatusCode(401);
         }
         
@@ -33,14 +65,28 @@ class JwtFilter implements FilterInterface
         try {
             $key = getenv('jwt.secretkey') ?: 'fallback-secret-key-for-development-only-change-this';
             $decoded = JWT::decode($token, new Key($key, 'HS256'));
+            
+            // Cek apakah token sudah kedaluwarsa
+            if ($decoded->exp < time()) {
+                throw new \Exception('Token kedaluwarsa');
+            }
+            
             // Simpan data user agar bisa diakses di controller
             $request->user = $decoded;
         } catch (\Exception $e) {
             $response = Services::response();
+            $corsHeaders = $this->getCorsHeaders($request);
+            
+            foreach ($corsHeaders as $key => $value) {
+                $response->setHeader($key, $value);
+            }
+            
             return $response
-                ->setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
-                ->setHeader('Access-Control-Allow-Credentials', 'true')
-                ->setBody(json_encode(['error' => 'Token tidak valid atau kedaluwarsa']))
+                ->setBody(json_encode([
+                    'status' => 'error',
+                    'message' => 'Token tidak valid atau kedaluwarsa: ' . $e->getMessage(),
+                    'error' => 'Unauthorized'
+                ]))
                 ->setStatusCode(401);
         }
         
@@ -50,8 +96,11 @@ class JwtFilter implements FilterInterface
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null) 
     {
         // Pastikan CORS headers ada di response
-        $response->setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
-                 ->setHeader('Access-Control-Allow-Credentials', 'true');
+        $corsHeaders = $this->getCorsHeaders($request);
+        
+        foreach ($corsHeaders as $key => $value) {
+            $response->setHeader($key, $value);
+        }
         
         return $response;
     }

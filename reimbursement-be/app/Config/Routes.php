@@ -7,7 +7,28 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
-// TANGANI SEMUA PREFLIGHT REQUESTS UNTUK API
+// TANGANI SEMUA PREFLIGHT REQUESTS UNTUK API - Lebih spesifik
+$routes->options('api/login', static function () {
+    return response()->setStatusCode(200);
+});
+
+$routes->options('api/reimbursements', static function () {
+    return response()->setStatusCode(200);
+});
+
+$routes->options('api/reimbursements/history', static function () {
+    return response()->setStatusCode(200);
+});
+
+$routes->options('api/reimbursements/(:num)', static function () {
+    return response()->setStatusCode(200);
+});
+
+$routes->options('api/reimbursements/(:num)/approve', static function () {
+    return response()->setStatusCode(200);
+});
+
+// Catch-all untuk preflight requests lainnya
 $routes->options('api/(:any)', static function () {
     return response()->setStatusCode(200);
 });
@@ -19,7 +40,7 @@ $routes->post('api/login', 'API\AuthController::login');
 $routes->group('api', ['filter' => 'jwt'], static function ($routes) {
     // Rute reimbursements
     $routes->get('reimbursements', 'API\ReimbursementController::index');
-    $routes->get('reimbursements/history', 'API\ReimbursementController::history'); // Endpoint baru untuk riwayat
+    $routes->get('reimbursements/history', 'API\ReimbursementController::history'); // Endpoint untuk riwayat
     $routes->get('reimbursements/(:num)', 'API\ReimbursementController::show/$1');
     $routes->post('reimbursements', 'API\ReimbursementController::create');
     $routes->post('reimbursements/(:num)/approve', 'API\ReimbursementController::approve/$1');
