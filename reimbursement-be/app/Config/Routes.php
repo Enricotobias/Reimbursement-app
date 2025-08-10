@@ -12,13 +12,12 @@ $routes->options('api/(:any)', static function () {
     return response()->setStatusCode(200);
 });
 
-// Rute API untuk Login
-// Hapus "App\Controllers\" dari sini
+// Rute API untuk Login (tidak perlu JWT)
 $routes->post('api/login', 'API\AuthController::login');
 
 // Grup API yang dilindungi oleh JWT Filter
 $routes->group('api', ['filter' => 'jwt'], static function ($routes) {
-    // Hapus "App\Controllers\" dari semua rute di dalam grup ini
+    // Rute reimbursements
     $routes->get('reimbursements', 'API\ReimbursementController::index');
     $routes->get('reimbursements/(:num)', 'API\ReimbursementController::show/$1');
     $routes->post('reimbursements', 'API\ReimbursementController::create');

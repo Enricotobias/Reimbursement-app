@@ -1,55 +1,134 @@
 /* src/components/ModalStyles.css */
+
+/* Overlay gelap full layar, di atas sidebar/topbar */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000; /* > z-index sidebar (100) */
 }
 
+/* Kontainer center, fixed ke viewport */
+.modal-container {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1001; /* di atas overlay */
+  pointer-events: none; /* biar klik hanya ke modal-content */
+}
+
+/* Kartu modal */
 .modal-content {
-  background-color: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  width: min(920px, 92vw);
+  max-height: 88vh;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  pointer-events: all;
 }
 
+/* Header sticky agar tombol close selalu terlihat */
 .modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
 }
 
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
+.modal-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close {
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
-  color: #6c757d;
+  padding: 6px 8px;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   overflow-y: auto;
+  max-height: calc(88vh - 64px);
 }
 
+/* Detail info grid sederhana */
+.detail-info {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 8px 16px;
+  margin-bottom: 1rem;
+}
+
+.detail-info p {
+  margin: 0;
+  display: contents;
+}
+
+.detail-info span {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.detail-info strong {
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+/* Badge status */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge--approved { background: #ecfdf5; color: #047857; }
+.badge--rejected { background: #fef2f2; color: #b91c1c; }
+.badge--pending  { background: #fff7ed; color: #c2410c; }
+
+/* Tabel detail */
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+}
+.detail-table th, .detail-table td {
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 10px 8px;
+  vertical-align: top;
+}
+.detail-table th {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.loading-container, .error-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Total di bawah */
 .total-amount {
   text-align: right;
-  margin-top: 1.5rem;
-  font-size: 1.2rem;
-  color: var(--primary-color);
+  margin-top: 1rem;
+  font-size: 1.05rem;
+  color: var(--primary-color, #1f2937);
+  border-top: 2px solid var(--primary-color, #e5e7eb);
+  padding-top: 0.75rem;
 }

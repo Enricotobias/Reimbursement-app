@@ -66,27 +66,49 @@ class ReimbursementController extends ResourceController
         $this->setCorsHeaders();
         
         try {
+            // Validasi ID
+            if (!$id || !is_numeric($id)) {
+                return $this->fail([
+                    'status' => 'error',
+                    'message' => 'ID tidak valid'
+                ], 400);
+            }
+
+            log_message('info', 'Requesting detail for reimbursement ID: ' . $id);
+            
             $reimbursementModel = new ReimbursementModel();
             $detailModel = new ReimbursementDetailModel();
 
-            $reimbursement = $reimbursementModel
-                ->select('reimbursements.*, users.name as user_name')
-                ->join('users', 'users.id = reimbursements.user_id')
-                ->find($id);
-
+            // Coba ambil data reimbursement tanpa JOIN dulu untuk debug
+            $reimbursement = $reimbursementModel->find($id);
+            
             if (!$reimbursement) {
+                log_message('warning', 'Reimbursement not found for ID: ' . $id);
                 return $this->failNotFound('Data pengajuan tidak ditemukan');
             }
 
-            $details = $detailModel->where('reimbursement_id', $id)->findAll();
-            $reimbursement['details'] = $details;
+            // Ambil nama user secara terpisah untuk menghindari JOIN error
+            $userModel = model('UserModel');
+            $user = $userModel->find($reimbursement['user_id']);
+            $reimbursement['user_name'] = $user ? $user['name'] : 'Unknown User';
 
+            // Ambil details
+            $details = $detailModel->where('reimbursement_id', $id)->findAll();
+            $reimbursement['details'] = $details ?: [];
+
+            log_message('info', 'Successfully retrieved reimbursement detail for ID: ' . $id);
+            log_message('debug', 'Reimbursement data: ' . json_encode($reimbursement));
+            
             return $this->respond($reimbursement);
+            
         } catch (\Exception $e) {
             log_message('error', 'Error in reimbursements show: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
             return $this->fail([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan server',
+                'debug' => $e->getMessage() // Untuk development, hapus di production
             ], 500);
         }
     }

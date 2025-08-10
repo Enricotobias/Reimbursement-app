@@ -10,5 +10,6 @@ class DatabaseSeeder extends Seeder
     {
         // Panggil seeder lain dari sini
         $this->call('UserSeeder');
+        $this->call('ReimbursementSeeder'); // Tambahkan seeder reimbursement
     }
 }

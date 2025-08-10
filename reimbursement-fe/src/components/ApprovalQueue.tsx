@@ -1,5 +1,6 @@
 // src/components/ApprovalQueue.tsx
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { apiService } from '../services/apiService';
 import { type Reimbursement } from '../types'; 
 import './TableStyles.css';
@@ -71,46 +72,52 @@ const ApprovalQueue = ({ title, status, canCheck, canApprove }: Props) => {
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
-    <div className="table-container">
-      <h2 className="table-title">{title}</h2>
-      {reimbursements.length === 0 ? (
-        <p>Tidak ada pengajuan yang perlu diproses saat ini.</p>
-      ) : (
-        <table className="modern-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tanggal Pengajuan</th>
-              <th>Total Nominal</th>
-              <th>Status</th>
-              <th style={{ width: '250px' }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reimbursements.map(item => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>{item.reimbursement_date}</td>
-                <td>Rp {Number(item.total_amount).toLocaleString('id-ID')}</td>
-                <td>{item.status}</td>
-                <td className="action-buttons">
-                  <button className="btn-detail" onClick={() => setSelectedId(item.id)}>Detail</button>
-                  {canCheck && <button className="btn-check" onClick={() => handleProcess(item.id, 'approve')}>Check</button>}
-                  {canApprove && (
-                    <>
-                      <button className="btn-approve" onClick={() => handleProcess(item.id, 'approve')}>Approve</button>
-                      <button className="btn-reject" onClick={() => handleProcess(item.id, 'reject')}>Reject</button>
-                    </>
-                  )}
-                </td>
+    <>
+      <div className="table-container">
+        <h2 className="table-title">{title}</h2>
+        {reimbursements.length === 0 ? (
+          <p>Tidak ada pengajuan yang perlu diproses saat ini.</p>
+        ) : (
+          <table className="modern-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tanggal Pengajuan</th>
+                <th>Total Nominal</th>
+                <th>Status</th>
+                <th style={{ width: '250px' }}>Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {reimbursements.map(item => (
+                <tr key={item.id}>
+                  <td>{item.id}</td>
+                  <td>{item.reimbursement_date}</td>
+                  <td>Rp {Number(item.total_amount).toLocaleString('id-ID')}</td>
+                  <td>{item.status}</td>
+                  <td className="action-buttons">
+                    <button className="btn-detail" onClick={() => setSelectedId(item.id)}>Detail</button>
+                    {canCheck && <button className="btn-check" onClick={() => handleProcess(item.id, 'approve')}>Check</button>}
+                    {canApprove && (
+                      <>
+                        <button className="btn-approve" onClick={() => handleProcess(item.id, 'approve')}>Approve</button>
+                        <button className="btn-reject" onClick={() => handleProcess(item.id, 'reject')}>Reject</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      
+      {/* Render Modal menggunakan Portal agar benar-benar di atas segalanya */}
+      {selectedId && createPortal(
+        <DetailModal reimbursementId={selectedId} onClose={() => setSelectedId(null)} />,
+        document.body
       )}
-      {/* Render Modal di sini */}
-      <DetailModal reimbursementId={selectedId} onClose={() => setSelectedId(null)} />
-    </div>
+    </>
   );
 };
 
