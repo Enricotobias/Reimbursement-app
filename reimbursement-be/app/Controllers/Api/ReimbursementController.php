@@ -61,6 +61,92 @@ class ReimbursementController extends ResourceController
         }
     }
 
+    // Method baru untuk riwayat - semua role bisa lihat semua data
+    public function history()
+    {
+        $this->setCorsHeaders();
+        
+        try {
+            $user = $this->request->user;
+            $model = new ReimbursementModel();
+            
+            // Semua role bisa melihat semua pengajuan untuk riwayat
+            $data = $model->orderBy('id', 'DESC')->findAll();
+            
+            // Tambahkan informasi approval status untuk setiap pengajuan
+            foreach ($data as &$item) {
+                $item['approval_progress'] = $this->getApprovalProgress($item['status']);
+            }
+            
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Riwayat berhasil dimuat',
+                'data' => $data ?: []
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in reimbursements history: ' . $e->getMessage());
+            return $this->fail([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function getApprovalProgress($status)
+    {
+        $steps = [
+            'direct_superior' => ['status' => 'waiting', 'label' => 'Direct Superior'],
+            'finance_spv' => ['status' => 'waiting', 'label' => 'Finance SPV'],
+            'finance_manager' => ['status' => 'waiting', 'label' => 'Finance Manager'],
+            'director' => ['status' => 'waiting', 'label' => 'Director']
+        ];
+
+        switch ($status) {
+            case 'pending':
+                // Semua masih waiting
+                break;
+            case 'approved_superior':
+                $steps['direct_superior']['status'] = 'approved';
+                break;
+            case 'approved_spv':
+                $steps['direct_superior']['status'] = 'approved';
+                $steps['finance_spv']['status'] = 'approved';
+                break;
+            case 'approved_manager':
+                $steps['direct_superior']['status'] = 'approved';
+                $steps['finance_spv']['status'] = 'approved';
+                $steps['finance_manager']['status'] = 'approved';
+                break;
+            case 'completed':
+                foreach ($steps as &$step) {
+                    $step['status'] = 'approved';
+                }
+                break;
+            case 'rejected':
+                // Tentukan di step mana direject berdasarkan status sebelumnya
+                // Untuk sekarang, kita asumsikan rejected di step terakhir yang aktif
+                if (strpos($status, 'approved_manager') !== false) {
+                    $steps['direct_superior']['status'] = 'approved';
+                    $steps['finance_spv']['status'] = 'approved';
+                    $steps['finance_manager']['status'] = 'approved';
+                    $steps['director']['status'] = 'rejected';
+                } else if (strpos($status, 'approved_spv') !== false) {
+                    $steps['direct_superior']['status'] = 'approved';
+                    $steps['finance_spv']['status'] = 'approved';
+                    $steps['finance_manager']['status'] = 'rejected';
+                } else if (strpos($status, 'approved_superior') !== false) {
+                    $steps['direct_superior']['status'] = 'approved';
+                    $steps['finance_spv']['status'] = 'rejected';
+                } else {
+                    $steps['direct_superior']['status'] = 'rejected';
+                }
+                break;
+        }
+
+        return $steps;
+    }
+
     public function show($id = null)
     {
         $this->setCorsHeaders();
@@ -95,6 +181,11 @@ class ReimbursementController extends ResourceController
             // Ambil details
             $details = $detailModel->where('reimbursement_id', $id)->findAll();
             $reimbursement['details'] = $details ?: [];
+
+            // Tambahkan info bank dari field yang ada
+            $reimbursement['bank_name'] = $reimbursement['bank'] ?? '-';
+            $reimbursement['account_name'] = $reimbursement['acc_name'] ?? '-';
+            $reimbursement['account_number'] = $reimbursement['acc_no'] ?? '-';
 
             log_message('info', 'Successfully retrieved reimbursement detail for ID: ' . $id);
             log_message('debug', 'Reimbursement data: ' . json_encode($reimbursement));

@@ -1,10 +1,10 @@
-// src/pages/HistoryPage.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../services/apiService';
 import type { Reimbursement } from '../types';
 import '../components/TableStyles.css';
 import './DashboardPage.css';
 import DetailModal from '../components/DetailModal';
+import DashboardLayout from '../layouts/DashboardLayout';
 
 type HistoryItem = Reimbursement & {
   created_at?: string;
@@ -69,7 +69,8 @@ const HistoryPage: React.FC = () => {
     (async () => {
       setLoading(true); setErr(null);
       try {
-        const res = await apiService.getReimbursements();
+        // Gunakan endpoint history yang baru untuk melihat semua pengajuan
+        const res = await apiService.getReimbursementsHistory();
         const arr = Array.isArray(res?.data?.data) ? res.data.data
                   : Array.isArray(res?.data) ? res.data
                   : [];
@@ -94,33 +95,68 @@ const HistoryPage: React.FC = () => {
   };
 
   const renderProgress = (row: HistoryItem) => {
-    const approvals = getApprovalList(row);
-    const map = approvals && approvals.length ? toRoleMap(approvals) : new Map();
+    // Gunakan data approval_progress dari backend jika ada
+    const approvalProgress = row.approval_progress;
+    
+    if (approvalProgress) {
+      // Data langsung dari backend
+      return (
+        <div className="progress-line">
+          {Object.entries(approvalProgress).map(([role, info]: [string, any], idx) => {
+            const label = info.label || role;
+            const status = info.status || 'waiting';
 
+            const cls = status === 'approved' ? 'progress-chip progress-chip--approved'
+                     : status === 'rejected' ? 'progress-chip progress-chip--rejected'
+                     : 'progress-chip progress-chip--waiting';
+
+            return (
+              <React.Fragment key={role}>
+                <span className={cls} title={`${label}: ${status}`}>
+                  <i aria-hidden className="dot" />
+                  {label}
+                </span>
+                {idx < Object.keys(approvalProgress).length - 1 && <span className="connector" aria-hidden />}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Fallback: logic lama berdasarkan status
+    const statusToStepMap: { [key: string]: string[] } = {
+      'pending': [],
+      'approved_superior': ['direct_superior'],
+      'approved_spv': ['direct_superior', 'finance_spv'],
+      'approved_manager': ['direct_superior', 'finance_spv', 'finance_manager'],
+      'completed': ['direct_superior', 'finance_spv', 'finance_manager', 'director'],
+      'rejected': [] // akan ditentukan berdasarkan konteks
+    };
+
+    const approvedSteps = statusToStepMap[row.status] || [];
+    
     return (
       <div className="progress-line">
         {stepsOrder.map((role, idx) => {
-          const entry: any = map.get(role) || { role, status: 'waiting' };
           const label =
             role === 'direct_superior' ? 'Direct Superior' :
             role === 'finance_spv'     ? 'Finance SPV'     :
             role === 'finance_manager' ? 'Finance Manager' :
             role === 'director'        ? 'Director'        : role;
 
-          const s = String(entry.status || 'waiting').toLowerCase();
-          const cls = s === 'approved' ? 'progress-chip progress-chip--approved'
-                   : s === 'rejected' ? 'progress-chip progress-chip--rejected'
-                   : s === 'skipped'  ? 'progress-chip progress-chip--skipped'
+          const isApproved = approvedSteps.includes(role);
+          const isRejected = row.status === 'rejected' && !isApproved;
+          
+          const cls = isApproved ? 'progress-chip progress-chip--approved'
+                   : isRejected ? 'progress-chip progress-chip--rejected'
                    : 'progress-chip progress-chip--waiting';
 
-          const tooltip =
-            s === 'approved' || s === 'rejected'
-              ? `${label}: ${s}${entry.by ? ` by ${entry.by}` : ''}${entry.at ? ` @ ${new Date(entry.at).toISOString().slice(0,10)}` : ''}`
-              : `${label}: ${s}`;
+          const status = isApproved ? 'approved' : isRejected ? 'rejected' : 'waiting';
 
           return (
             <React.Fragment key={role}>
-              <span className={cls} title={tooltip}>
+              <span className={cls} title={`${label}: ${status}`}>
                 <i aria-hidden className="dot" />
                 {label}
               </span>
@@ -132,9 +168,8 @@ const HistoryPage: React.FC = () => {
     );
   };
 
-  // ⬇⬇⬇ HANYA KONTEN. Sidebar/topbar dirender oleh layout global ⬇⬇⬇
   return (
-    <div className="page-content">
+    <DashboardLayout>
       <div className="page-header">
         <h1>Riwayat Pengajuan</h1>
         <p className="muted">Lihat progres persetujuan tiap jabatan untuk setiap pengajuan.</p>
@@ -150,6 +185,7 @@ const HistoryPage: React.FC = () => {
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Pengaju</th>
                   <th>Tanggal</th>
                   <th>Total</th>
                   <th>Status Akhir</th>
@@ -164,6 +200,7 @@ const HistoryPage: React.FC = () => {
                   return (
                     <tr key={r.id}>
                       <td>{r.id}</td>
+                      <td>{r.user_name || '-'}</td>
                       <td>{tanggal ? new Date(tanggal).toISOString().slice(0, 10) : '-'}</td>
                       <td>{total.toLocaleString('id-ID', { style:'currency', currency:'IDR', maximumFractionDigits:0 })}</td>
                       <td>{renderStatusChip(r.status)}</td>
@@ -182,7 +219,7 @@ const HistoryPage: React.FC = () => {
                 })}
                 {data.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="text-center muted p-4">Belum ada riwayat.</td>
+                    <td colSpan={7} className="text-center muted p-4">Belum ada riwayat.</td>
                   </tr>
                 )}
               </tbody>
@@ -195,7 +232,7 @@ const HistoryPage: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

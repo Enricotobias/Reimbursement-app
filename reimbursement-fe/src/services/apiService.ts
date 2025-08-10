@@ -44,6 +44,9 @@ export const apiService = {
   getReimbursements: () => {
     return apiClient.get('/reimbursements');
   },
+  getReimbursementsHistory: () => {
+    return apiClient.get('/reimbursements/history'); // Endpoint baru untuk riwayat
+  },
   createReimbursement: (data: any) => {
     return apiClient.post('/reimbursements', data);
   },

@@ -19,6 +19,7 @@ $routes->post('api/login', 'API\AuthController::login');
 $routes->group('api', ['filter' => 'jwt'], static function ($routes) {
     // Rute reimbursements
     $routes->get('reimbursements', 'API\ReimbursementController::index');
+    $routes->get('reimbursements/history', 'API\ReimbursementController::history'); // Endpoint baru untuk riwayat
     $routes->get('reimbursements/(:num)', 'API\ReimbursementController::show/$1');
     $routes->post('reimbursements', 'API\ReimbursementController::create');
     $routes->post('reimbursements/(:num)/approve', 'API\ReimbursementController::approve/$1');

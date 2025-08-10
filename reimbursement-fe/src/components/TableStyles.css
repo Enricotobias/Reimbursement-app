@@ -100,55 +100,155 @@
   font-weight: bold;
 }
 
-/* ====== Progress Approval (History) ====== */
 /* ===== Progress Approval (History) ===== */
 .progress-line {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  min-width: 240px;
+  min-width: 280px;
 }
 
 .progress-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
   font-weight: 600;
   border: 1px solid transparent;
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
+
 .progress-chip .dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   display: inline-block;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
-/* waiting (default) */
-.progress-chip--waiting { background:#fffbeb; color:#7c2d12; border-color:#fbbf24; }
-.progress-chip--waiting .dot { background:#f59e0b; }
+/* Status: Waiting (Kuning) */
+.progress-chip--waiting { 
+  background: #fef3c7; 
+  color: #92400e; 
+  border-color: #fbbf24; 
+}
+.progress-chip--waiting .dot { 
+  background: #f59e0b;
+  border-color: #d97706;
+}
 
-/* approved */
-.progress-chip--approved { background:#ecfdf5; color:#065f46; border-color:#34d399; }
-.progress-chip--approved .dot { background:#10b981; }
+/* Status: Approved (Hijau) */
+.progress-chip--approved { 
+  background: #d1fae5; 
+  color: #065f46; 
+  border-color: #10b981; 
+}
+.progress-chip--approved .dot { 
+  background: #059669;
+  border-color: #047857;
+}
 
-/* rejected */
-.progress-chip--rejected { background:#fef2f2; color:#7f1d1d; border-color:#f87171; }
-.progress-chip--rejected .dot { background:#ef4444; }
+/* Status: Rejected (Merah) */
+.progress-chip--rejected { 
+  background: #fee2e2; 
+  color: #991b1b; 
+  border-color: #f87171; 
+}
+.progress-chip--rejected .dot { 
+  background: #dc2626;
+  border-color: #b91c1c;
+}
 
-/* skipped (opsional) */
-.progress-chip--skipped { background:#f3f4f6; color:#374151; border-color:#d1d5db; }
-.progress-chip--skipped .dot { background:#9ca3af; }
+/* Status: Skipped (Abu-abu) */
+.progress-chip--skipped { 
+  background: #f3f4f6; 
+  color: #374151; 
+  border-color: #d1d5db; 
+}
+.progress-chip--skipped .dot { 
+  background: #9ca3af;
+  border-color: #6b7280;
+}
 
-/* status chip yang sudah ada (untuk kolom 'Status Akhir') */
-.chip { display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid transparent; }
-.chip--approved { background:#ecfdf5; color:#047857; border-color:#34d399; }
-.chip--rejected { background:#fef2f2; color:#b91c1c; border-color:#f87171; }
-.chip--pending  { background:#fff7ed; color:#c2410c; border-color:#fbbf24; }
+/* Garis penghubung antar step */
+.connector { 
+  width: 20px; 
+  height: 2px; 
+  background: #e5e7eb; 
+  display: inline-block; 
+  margin: 0 2px;
+}
 
-/* garis penghubung antar step */
-.connector { width:24px; height:2px; background:#e5e7eb; display:inline-block; }
+/* Status chip untuk kolom 'Status Akhir' */
+.chip { 
+  display: inline-flex; 
+  align-items: center; 
+  padding: 4px 12px; 
+  border-radius: 999px; 
+  font-size: 12px; 
+  font-weight: 600; 
+  border: 1px solid transparent; 
+}
+
+.chip--approved { 
+  background: #d1fae5; 
+  color: #047857; 
+  border-color: #10b981; 
+}
+
+.chip--rejected { 
+  background: #fee2e2; 
+  color: #b91c1c; 
+  border-color: #f87171; 
+}
+
+.chip--pending, .chip--approved_superior, .chip--approved_spv, .chip--approved_manager { 
+  background: #fef3c7; 
+  color: #92400e; 
+  border-color: #fbbf24; 
+}
+
+.chip--completed {
+  background: #d1fae5; 
+  color: #047857; 
+  border-color: #10b981;
+}
+
+/* Responsive untuk progress chips */
+@media (max-width: 1200px) {
+  .progress-line {
+    min-width: 240px;
+  }
+  
+  .progress-chip {
+    font-size: 10px;
+    padding: 3px 6px;
+    gap: 4px;
+  }
+  
+  .progress-chip .dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .connector {
+    width: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .progress-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: auto;
+  }
+  
+  .connector {
+    display: none;
+  }
+}

@@ -109,3 +109,82 @@
 .sidebar-nav .nav-link {
   display: block;     /* tambahkan ini kalau belum ada */
 }
+
+/* Tambahkan ini ke src/pages/DashboardPage.css atau buat file terpisah */
+
+/* Styling untuk halaman riwayat */
+.page-header .muted {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: var(--danger-color);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.p-4 {
+  padding: 2rem;
+}
+
+/* Pastikan nav link menggunakan Link component dengan styling yang benar */
+.sidebar-nav .nav-link {
+  padding: 0.75rem 1.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+  display: block;
+}
+
+.sidebar-nav .nav-link:hover, 
+.sidebar-nav .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Responsive untuk tabel dengan banyak kolom */
+@media (max-width: 1200px) {
+  .progress-line {
+    min-width: 200px;
+  }
+  
+  .progress-chip {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+  
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  
+  .modern-table {
+    font-size: 0.8rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+}
