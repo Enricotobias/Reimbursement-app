@@ -2,9 +2,6 @@
 
 Selamat datang di Proyek Aplikasi Reimbursement! Ini adalah aplikasi web *full-stack* yang dirancang untuk mempermudah proses pengajuan dan persetujuan reimbursement di dalam perusahaan. Aplikasi ini memiliki alur persetujuan multi-level berdasarkan peran pengguna, mulai dari staf hingga direktur.
 
-![Tampilan Dashboard](<img width="1919" height="867" alt="image" src="https://github.com/user-attachments/assets/f4f79e3b-a2c5-4b7e-84fb-e0fc91c514f7" />
-)
-
 ## 🌟 Fitur Utama
 
 * **Autentikasi Pengguna**: Sistem login aman menggunakan JWT (JSON Web Tokens).
